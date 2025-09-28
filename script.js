@@ -119,7 +119,8 @@ async function discoverAllImages() {
       upload_time: new Date(file.sha ? 'GitHub commit' : Date.now()).toLocaleString(),
       source: 'github',
       size: file.size,
-      download_url: file.download_url || `${githubRawUrl}${file.name}`,
+      // Always use the GitHub raw URL for images
+      download_url: `https://raw.githubusercontent.com/alemxral/screenshot/main/screenshots/${file.name}`,
       github_url: file.html_url,
       sha: file.sha
     }));
@@ -168,8 +169,8 @@ function loadSingleImage(imageInfo, onLoad) {
   return new Promise((resolve) => {
     const { filename, upload_time, source, download_url, size, github_url } = imageInfo;
     
-    // Use GitHub raw URL if available, otherwise use local path
-    const imgPath = download_url || `${basePath}${filename}`;
+  // Always use the GitHub raw URL for images
+  const imgPath = download_url;
     
     const imgContainer = document.createElement("div");
     imgContainer.classList.add("img-container");
@@ -237,30 +238,8 @@ function loadSingleImage(imageInfo, onLoad) {
     };
     
     img.onerror = () => {
-      console.error(`❌ Image not found: ${imgPath}`);
-      
-      // If GitHub image fails, try local fallback
-      if (source === 'github' && imgPath.includes('githubusercontent.com')) {
-        console.log(`🔄 Trying local fallback for: ${filename}`);
-        const fallbackPath = `${basePath}${filename}`;
-        
-        const fallbackImg = new Image();
-        fallbackImg.src = fallbackPath;
-        fallbackImg.alt = filename;
-        
-        fallbackImg.onload = () => {
-          console.log(`✅ Local fallback successful: ${filename}`);
-          // Update the original img src to the working fallback
-          img.src = fallbackPath;
-        };
-        
-        fallbackImg.onerror = () => {
-          console.error(`❌ Both GitHub and local failed for: ${filename}`);
-          resolve();
-        };
-      } else {
-        resolve();
-      }
+      console.error(`❌ Image not found on GitHub: ${imgPath}`);
+      resolve();
     };
   });
 }
