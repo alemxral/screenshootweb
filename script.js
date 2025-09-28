@@ -70,18 +70,18 @@ async function loadGallery() {
 // Load image data from registry.json
 async function loadFromRegistry() {
   try {
-    const response = await fetch("registry.json");
-    if (!response.ok) throw new Error("Could not load registry.json");
+    const githubRawUrl = 'https://raw.githubusercontent.com/alemxral/screenshot/main/registry.json';
+    const response = await fetch(githubRawUrl);
+    if (!response.ok) throw new Error("Could not load registry.json from GitHub");
     const data = await response.json();
-    
-    console.log(`📋 Registry: ${data.length} images found`);
+    console.log(`📋 Registry: ${data.length} images found (GitHub)`);
     return data.map(item => ({
       filename: item.filename,
       upload_time: item.upload_time || 'Unknown time',
       source: 'registry'
     }));
   } catch (error) {
-    console.log("⚠️ Registry not available, using auto-discovery only");
+    console.log("⚠️ Registry not available on GitHub, skipping");
     return [];
   }
 }
@@ -101,23 +101,18 @@ async function discoverAllImages() {
         'User-Agent': 'Screenshot-Gallery-App'
       }
     });
-    
     if (!response.ok) {
       throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);
     }
-    
     const files = await response.json();
     console.log(`📡 GitHub API response: ${files.length} items found`);
-    
     // Filter only image files
     const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'];
     const imageFiles = files.filter(file => {
       const ext = file.name.toLowerCase().substr(file.name.lastIndexOf('.'));
       return file.type === 'file' && imageExtensions.includes(ext);
     });
-    
     console.log(`🖼️ Filtered to ${imageFiles.length} image files`);
-    
     // Convert to our format with GitHub data
     const discoveredImages = imageFiles.map(file => ({
       filename: file.name,
@@ -128,83 +123,25 @@ async function discoverAllImages() {
       github_url: file.html_url,
       sha: file.sha
     }));
-    
     // Sort by filename (newest first - higher numbers first)
     discoveredImages.sort((a, b) => {
       const numA = parseInt(a.filename.match(/\d+/)?.[0] || 0);
       const numB = parseInt(b.filename.match(/\d+/)?.[0] || 0);
       return numB - numA;
     });
-    
     console.log(`✅ GitHub discovery: ${discoveredImages.length} images found and sorted`);
     return discoveredImages;
-    
   } catch (error) {
     console.error('❌ GitHub API fetch failed:', error);
-    
-    // Fallback to local discovery if GitHub fails
-    console.log('🔄 Falling back to local image discovery...');
-    return await discoverLocalImages();
+    // No fallback to local discovery
+    return [];
   }
 }
 
 // Fallback local image discovery (original method)
 async function discoverLocalImages() {
-  const discoveredImages = [];
-  
-  // Try to discover images by attempting to load common filename patterns
-  const patterns = [
-    // Standard pattern: img1.png, img2.png, etc.
-    ...Array.from({length: 100}, (_, i) => `img${i + 1}.png`),
-    // Alternative patterns
-    ...Array.from({length: 100}, (_, i) => `img${i + 1}.jpg`),
-    ...Array.from({length: 50}, (_, i) => `screenshot${i + 1}.png`),
-    ...Array.from({length: 50}, (_, i) => `image${i + 1}.png`),
-  ];
-  
-  console.log(`🔍 Local auto-discovering images...`);
-  
-  // Test each pattern in batches to avoid overwhelming the browser
-  const batchSize = 20;
-  for (let i = 0; i < patterns.length; i += batchSize) {
-    const batch = patterns.slice(i, i + batchSize);
-    const batchPromises = batch.map(async filename => {
-      try {
-        const imgPath = `${basePath}${filename}`;
-        const response = await fetch(imgPath, { method: 'HEAD' });
-        if (response.ok) {
-          // Get file modification time from headers if available
-          const lastModified = response.headers.get('last-modified');
-          const upload_time = lastModified ? new Date(lastModified).toLocaleString() : 'Auto-discovered';
-          
-          return {
-            filename,
-            upload_time,
-            source: 'local',
-            download_url: imgPath
-          };
-        }
-      } catch (error) {
-        // File doesn't exist, ignore
-      }
-      return null;
-    });
-    
-    const batchResults = await Promise.allSettled(batchPromises);
-    batchResults.forEach(result => {
-      if (result.status === 'fulfilled' && result.value) {
-        discoveredImages.push(result.value);
-      }
-    });
-    
-    // Small delay to prevent overwhelming the browser
-    if (i + batchSize < patterns.length) {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-  }
-  
-  console.log(`🔍 Local discovery: ${discoveredImages.length} images found`);
-  return discoveredImages;
+  // Local discovery is disabled; always return empty array
+  return [];
 }
 
 // Combine registry and discovered images, avoiding duplicates
@@ -343,28 +280,24 @@ const clearBtn = document.getElementById("clear-messages");
 
 // Load and display messages
 function loadMessages() {
-  messagesContainer.innerHTML = '<p class="loading">Loading messages...</p>';
-  
-  fetch("messages.json")
+  messagesContainer.innerHTML = '<p class="loading">Loading messages from GitHub...</p>';
+  const githubRawUrl = 'https://raw.githubusercontent.com/alemxral/screenshot/main/messages.json';
+  fetch(githubRawUrl)
     .then(response => {
-      if (!response.ok) throw new Error("Could not load messages.json");
+      if (!response.ok) throw new Error("Could not load messages.json from GitHub");
       return response.json();
     })
     .then(messages => {
       messagesContainer.innerHTML = '';
-      
       if (messages.length === 0) {
         messagesContainer.innerHTML = '<div class="no-messages">📝 No messages recorded yet.<br>Press Fn while running the script to start recording!</div>';
         return;
       }
-      
       // Sort messages by ID (newest first)
       messages.sort((a, b) => b.id - a.id);
-      
       messages.forEach(message => {
         const messageItem = document.createElement("div");
         messageItem.classList.add("message-item");
-        
         messageItem.innerHTML = `
           <div class="message-text">${escapeHtml(message.message)}</div>
           <div class="message-meta">
@@ -374,13 +307,12 @@ function loadMessages() {
             <div class="message-id">#${message.id}</div>
           </div>
         `;
-        
         messagesContainer.appendChild(messageItem);
       });
     })
     .catch(error => {
-      console.error("Error loading messages:", error);
-      messagesContainer.innerHTML = '<div class="no-messages">❌ Error loading messages.<br>Make sure messages.json exists and the script is running.</div>';
+      console.error("Error loading messages from GitHub:", error);
+      messagesContainer.innerHTML = '<div class="no-messages">❌ Error loading messages from GitHub.</div>';
     });
 }
 
@@ -896,66 +828,28 @@ function updateAnswersSummary() {
 
 // Load quiz answers from GitHub first, then fallback to localStorage
 async function loadQuizAnswers() {
-  // First try to load from GitHub if token is available
-  if (GITHUB_CONFIG.token) {
-    try {
-      const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/quiz_answers.json`;
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `token ${GITHUB_CONFIG.token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
-      
-      if (response.ok) {
-        const fileData = await response.json();
-        // Decode the base64 content
-        const content = atob(fileData.content);
-        const githubData = JSON.parse(content);
-        
-        // Load the complete quiz data from GitHub
-        quizAnswers = {};
-        if (githubData.answers) {
-          // GitHub stores full answer objects, localStorage stores just the answer value
-          Object.keys(githubData.answers).forEach(questionNum => {
-            quizAnswers[questionNum] = githubData.answers[questionNum].answer;
-          });
-        }
-        
-        console.log('📡 Quiz answers loaded from GitHub:', Object.keys(quizAnswers).length, 'answers found');
-        
-        // Also save to localStorage as backup
-        saveQuizAnswers();
-        return;
-      }
-    } catch (error) {
-      console.log('⚠️ Could not load from GitHub:', error.message);
-    }
-  }
-  
-  // Fallback to localStorage if GitHub fails or no token
+  // Always load quiz answers from GitHub raw file
   try {
-    const saved = localStorage.getItem("quiz-answers");
-    if (saved) {
-      quizAnswers = JSON.parse(saved);
-      console.log('💾 Quiz answers loaded from localStorage:', Object.keys(quizAnswers).length, 'answers found');
-    } else {
-      quizAnswers = {};
-      console.log('📝 Starting with empty quiz answers');
+    const githubRawUrl = 'https://raw.githubusercontent.com/alemxral/screenshot/main/quiz_answers.json';
+    const response = await fetch(githubRawUrl);
+    if (!response.ok) throw new Error('Could not load quiz_answers.json from GitHub');
+    const githubData = await response.json();
+    quizAnswers = {};
+    if (githubData.answers) {
+      Object.keys(githubData.answers).forEach(questionNum => {
+        quizAnswers[questionNum] = githubData.answers[questionNum].answer;
+      });
     }
+    console.log('📡 Quiz answers loaded from GitHub:', Object.keys(quizAnswers).length, 'answers found');
   } catch (error) {
-    console.error("Error loading quiz answers:", error);
+    console.error('❌ Could not load quiz answers from GitHub:', error);
     quizAnswers = {};
   }
 }
 
 // Save quiz answers to localStorage
 function saveQuizAnswers() {
-  try {
-    localStorage.setItem("quiz-answers", JSON.stringify(quizAnswers));
-  } catch (error) {
-    console.error("Error saving quiz answers:", error);
-  }
+  // No-op: saving quiz answers locally is disabled. All answers are loaded from GitHub only.
 }
 
 // Refresh answers from GitHub
