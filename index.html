@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screenshot Gallery</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <h1>📸 Screenshot Gallery</h1>
+    <div class="header-controls">
+      <button id="refresh-gallery" class="refresh-button">🔄 Refresh Gallery</button>
+      <button id="messages-btn" class="messages-button">💬 View Messages</button>
+    </div>
+  </div>
+  
+  <div class="gallery-info">
+    <span id="gallery-count">Loading images...</span>
+  </div>
+  
+  <div id="gallery"></div>
+
+  <!-- GitHub Setup Section -->
+  <div id="github-setup" class="github-setup-section">
+    <div class="setup-header">
+      <h2>⚙️ GitHub Setup Required</h2>
+      <p>To save quiz answers directly to your GitHub repository, you need to configure your Personal Access Token.</p>
+    </div>
+    
+    <div class="setup-steps">
+      <ol>
+        <li><strong>Create a Personal Access Token:</strong>
+          <ul>
+            <li>Go to <a href="https://github.com/settings/tokens" target="_blank">GitHub Settings → Personal Access Tokens</a></li>
+            <li>Click "Generate new token" → "Tokens (classic)"</li>
+            <li>Select <code>repo</code> scope (full repository access)</li>
+            <li>Copy the generated token</li>
+          </ul>
+        </li>
+        <li><strong>Enter your token below:</strong></li>
+      </ol>
+      
+      <div class="token-input-section">
+        <input type="password" id="github-token-input" placeholder="Paste your GitHub token here..." class="token-input">
+        <button id="save-token-btn" class="btn btn-primary">💾 Save Token</button>
+      </div>
+      
+      <div class="setup-info">
+        <p><strong>Repository:</strong> alemxral/screenshot</p>
+        <p><strong>File:</strong> quiz_answers.json</p>
+        <p><em>Your token is stored locally in your browser and used to push answers directly to GitHub.</em></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quiz Section -->
+  <div class="quiz-section" style="display: none;">
+    <div class="section-header">
+      <h2>📝 Quiz & Exam Answers</h2>
+      <div class="github-status">
+        <span id="github-connection-status" class="status-connected">✅ Connected to GitHub</span>
+        <button id="change-token-btn" class="btn btn-secondary">⚙️ Change Token</button>
+      </div>
+      <div class="quiz-controls">
+        <button id="refresh-answers" class="btn btn-primary">🔄 Refresh from GitHub</button>
+        <button id="clear-all-answers" class="btn btn-danger">🗑️ Clear All Answers</button>
+      </div>
+    </div>
+    
+    <div class="quiz-container">
+      <!-- Question Input Form -->
+      <div class="question-input-section">
+        <div class="input-group">
+          <label for="question-number">Question Number (1-20):</label>
+          <div class="question-number-controls">
+            <select id="question-number" class="form-control">
+              <!-- Options will be populated by JavaScript -->
+            </select>
+            <span class="input-separator">OR</span>
+            <input type="number" id="question-input" class="form-control" min="1" max="20" placeholder="Type number...">
+          </div>
+          <div id="question-error" class="error-message" style="display: none;"></div>
+        </div>
+        
+        <div class="input-group">
+          <label>Answer Choice:</label>
+          <div class="answer-buttons" role="group" aria-label="Answer choices">
+            <button type="button" class="answer-btn" data-answer="A" aria-label="Answer A">A</button>
+            <button type="button" class="answer-btn" data-answer="B" aria-label="Answer B">B</button>
+            <button type="button" class="answer-btn" data-answer="C" aria-label="Answer C">C</button>
+            <button type="button" class="answer-btn" data-answer="D" aria-label="Answer D">D</button>
+            <button type="button" class="answer-btn" data-answer="E" aria-label="Answer E">E</button>
+          </div>
+        </div>
+        
+        <div class="input-actions">
+          <button id="submit-answer" class="btn btn-primary">✅ Submit Answer</button>
+          <button id="delete-answer" class="btn btn-warning">❌ Delete Answer</button>
+        </div>
+      </div>
+      
+      <!-- Answers Display -->
+      <div class="answers-display">
+        <h3>📋 Current Answers</h3>
+        <div id="answers-grid" class="answers-grid">
+          <!-- Answers will be populated by JavaScript -->
+        </div>
+        <div id="answers-summary" class="answers-summary">
+          <p>Answered: <span id="answered-count">0</span> / 20</p>
+          <p>Remaining: <span id="remaining-count">20</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for expanded image -->
+  <div id="modal">
+    <img id="modal-image" src="" alt="Expanded view">
+  </div>
+
+  <!-- Modal for messages -->
+  <div id="messages-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📝 Recorded Messages</h2>
+        <span class="close" id="close-messages">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="messages-container">
+          <p class="loading">Loading messages...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="refresh-messages" class="btn btn-primary">🔄 Refresh</button>
+        <button id="clear-messages" class="btn btn-danger">🗑️ Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
