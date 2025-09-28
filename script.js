@@ -78,7 +78,8 @@ async function loadFromRegistry() {
     return data.map(item => ({
       filename: item.filename,
       upload_time: item.upload_time || 'Unknown time',
-      source: 'registry'
+      source: 'registry',
+      download_url: `https://raw.githubusercontent.com/alemxral/screenshot/main/screenshots/${item.filename}`
     }));
   } catch (error) {
     console.log("⚠️ Registry not available on GitHub, skipping");
